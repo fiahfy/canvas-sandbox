@@ -59,6 +59,19 @@
         return canvas.toDataURL(mimeType, quality)
       }
 
+      const dataUrlToBlobUrl = (dataUrl) => {
+        const binary = atob(dataUrl.split(',')[1])
+        const mimeType = dataUrl.match(/(:)([a-z\/]+)(;)/)[2]
+        const content = new Uint8Array(binary.length)
+        for (let i = 0; i < binary.length; i++) {
+          content[i] = binary.charCodeAt(i)
+        }
+        const blob = new Blob([content], {
+          type: mimeType,
+        })
+        return window.URL.createObjectURL(blob)
+      }
+
       const convert = async (file) => {
         console.log('mime type: %s', file.type)
         console.log(file) // File
@@ -70,12 +83,14 @@
         url = await aspectFill(url, size, size)
 
         const mimeType = document.querySelector('[name="mimetype"]').value
-        const quality = Number(document.querySelector('[name="quality"]').value) / 100
+        const quality =
+          Number(document.querySelector('[name="quality"]').value) / 100
         url = await format(url, mimeType, quality)
 
         document.querySelector('[name="original"]').src = dataUrl
         document.querySelector('[name="converted"]').src = url
-        document.querySelector('[name="view"]').href = url
+        document.querySelector('[name="dataurl"]').href = url
+        document.querySelector('[name="bloburl"]').href = dataUrlToBlobUrl(url)
       }
 
       window.addEventListener('DOMContentLoaded', () => {
@@ -123,7 +138,8 @@
       <img name="converted" />
     </div>
     <div>
-      <a name="view">View</a>
+      <a name="dataurl">Data URL</a>
+      <a name="bloburl">Blob URL</a>
     </div>
   </body>
 </html>
