@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <style></style>
+    <script>
+      const readAsDataURL = (file) => {
+        return new Promise((resolve) => {
+          const reader = new FileReader()
+          reader.onload = (e) => {
+            console.log(e) // ProgressEvent
+            resolve(e.target.result)
+          }
+          reader.readAsDataURL(file)
+        })
+      }
+
+      const loadImage = (url) => {
+        return new Promise((resolve) => {
+          const image = new Image()
+          image.onload = () => {
+            resolve(image)
+          }
+          image.src = url
+        })
+      }
+
+      const aspectFill = async (dataUrl, width, height) => {
+        const image = await loadImage(dataUrl)
+        const canvas = document.createElement('canvas')
+        const ctx = canvas.getContext('2d')
+        let x = 0
+        let y = 0
+        let w = width
+        let h = height
+        if (height / width > image.height / image.width) {
+          w = (image.width * height) / image.height
+          x = (w - width) / -2
+        } else {
+          h = (image.height * width) / image.width
+          y = (h - height) / -2
+        }
+        console.log(image.width, image.height)
+        console.log(width, height)
+        console.log(x, y, w, h)
+        canvas.width = width
+        canvas.height = height
+        ctx.drawImage(image, 0, 0, image.width, image.height, x, y, w, h)
+        return canvas.toDataURL()
+      }
+
+      const format = async (dataUrl, mimeType, quality) => {
+        const image = await loadImage(dataUrl)
+        const canvas = document.createElement('canvas')
+        const ctx = canvas.getContext('2d')
+        canvas.width = image.width
+        canvas.height = image.height
+        ctx.drawImage(image, 0, 0, image.width, image.height)
+        console.log(mimeType, quality)
+        return canvas.toDataURL(mimeType, quality)
+      }
+
+      const convert = async (file) => {
+        console.log('mime type: %s', file.type)
+        console.log(file) // File
+        const dataUrl = await readAsDataURL(file)
+        // console.log(dataUrl)
+
+        let url = dataUrl
+        const size = Number(document.querySelector('[name="size"]').value)
+        url = await aspectFill(url, size, size)
+
+        const mimeType = document.querySelector('[name="mimetype"]').value
+        const quality = Number(document.querySelector('[name="quality"]').value) / 100
+        url = await format(url, mimeType, quality)
+
+        document.querySelector('[name="original"]').src = dataUrl
+        document.querySelector('[name="converted"]').src = url
+        document.querySelector('[name="view"]').href = url
+      }
+
+      window.addEventListener('DOMContentLoaded', () => {
+        document
+          .querySelector('[name="image"]')
+          .addEventListener('change', async (e) => {
+            console.log(e) // Event
+            const file = e.target.files[0]
+            await convert(file)
+          })
+        document
+          .querySelector('[name="convert"]')
+          .addEventListener('click', async (e) => {
+            const image = document.querySelector('[name="image"]')
+            const file = image.files[0]
+            await convert(file)
+          })
+      })
+    </script>
+  </head>
+  <body>
+    <div>
+      <input type="file" name="image" /><input
+        type="button"
+        name="convert"
+        value="convert"
+      />
+    </div>
+    <div>Size: <input type="number" name="size" value="256" min="0" />px</div>
+    <div>
+      Mime type:
+      <select name="mimetype">
+        <option value="image/png">image/png</option>
+        <option value="image/jpeg">image/jpeg</option>
+      </select>
+    </div>
+    <div>
+      Quality:
+      <input type="number" name="quality" value="100" min="0" max="100" />%
+    </div>
+    <div>
+      <img name="original" />
+    </div>
+    <div>
+      <img name="converted" />
+    </div>
+    <div>
+      <a name="view">View</a>
+    </div>
+  </body>
+</html>
